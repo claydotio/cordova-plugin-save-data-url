@@ -39,16 +39,14 @@ public class Canvas2ImagePlugin extends CordovaPlugin {
 		if (action.equals(ACTION)) {
 
 			String base64 = data.optString(0);
-			String extension = data.optString(1);
-			String quality = data.optString(2);
 			String picfolder= Environment.DIRECTORY_PICTURES;
-			boolean add2Galery=true;
-			if (data.length()>3) picfolder=data.optString(3);
-			if (data.length()>4) add2Galery=Boolean.valueOf(data.optString(4));
-				
+			boolean add2Gallery=true;
+			if (data.length()>1) picfolder=data.optString(1);
+			if (data.length()>2) add2Gallery=Boolean.valueOf(data.optString(2));
+
 			if (base64.equals("")) // isEmpty() requires API level 9
 				callbackContext.error("Missing base64 string");
-			
+
 			// Create the bitmap from the base64 string
 			Log.d("Canvas2ImagePlugin", base64);
 			byte[] decodedString = Base64.decode(base64, Base64.DEFAULT);
@@ -56,37 +54,29 @@ public class Canvas2ImagePlugin extends CordovaPlugin {
 			if (bmp == null) {
 				callbackContext.error("The image could not be decoded");
 			} else {
-				
+
 				// Save the image
-				File imageFile = savePhoto(bmp,extension,quality,picfolder);
+				File imageFile = savePhoto(bmp,picfolder);
 				if (imageFile == null)
 					callbackContext.error("Error while saving image");
-				
+
 				// Update image gallery
-				if (add2Galery) scanPhoto(imageFile);
-				
+				if (add2Gallery) scanPhoto(imageFile);
+
 				callbackContext.success(imageFile.toString());
 			}
-			
+
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	private int getQuality(String strQuality){
-		int result=100;
-		try {
-		    result=Integer.valueOf(strQuality);
-		    if (result> 100) result=100;
-		    if (result < 1) result=1;
-		} catch (Exception e){}		
-		return result;
-	}
-	private File savePhoto(Bitmap bmp,String extension,String strQuality,String picfolder) {
-		int quality=getQuality(strQuality);
+	private File savePhoto(Bitmap bmp, String picfolder) {
+		String extension = ".png";
+		int quality = 100;
 		File retVal = null;
-		
+
 		try {
 			Calendar c = Calendar.getInstance();
 			String date = "" + c.get(Calendar.DAY_OF_MONTH)
@@ -116,7 +106,7 @@ public class Canvas2ImagePlugin extends CordovaPlugin {
 			} else {
 				folder = Environment.getExternalStorageDirectory();
 			}
-			
+
 			File imageFile = new File(folder, "c2i_" + date.toString() + extension);
 			CompressFormat compressFormat=(extension.equals(".jpg")) ? Bitmap.CompressFormat.JPEG :Bitmap.CompressFormat.PNG;
 			FileOutputStream out = new FileOutputStream(imageFile);
@@ -131,14 +121,14 @@ public class Canvas2ImagePlugin extends CordovaPlugin {
 		}
 		return retVal;
 	}
-	
-	/* Invoke the system's media scanner to add your photo to the Media Provider's database, 
+
+	/* Invoke the system's media scanner to add your photo to the Media Provider's database,
 	 * making it available in the Android Gallery application and to other apps. */
 	private void scanPhoto(File imageFile)
 	{
 		Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
 	    Uri contentUri = Uri.fromFile(imageFile);
-	    mediaScanIntent.setData(contentUri);	      		  
+	    mediaScanIntent.setData(contentUri);
 	    cordova.getActivity().sendBroadcast(mediaScanIntent);
-	} 
+	}
 }
